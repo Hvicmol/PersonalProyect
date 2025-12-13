@@ -33,21 +33,21 @@
 
 <h1>Clasificación en Tiempo Real</h1>
 <video id="video" autoplay playsinline></video>
-<canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+<canvas id="canvas" width="100" height="100" style="display:none;"></canvas>
 <div id="prediction">Cargando modelo...</div>
 
 <script>
-    let model;
+    let modelo;
     const video = document.getElementById("video");
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
     const predictionBox = document.getElementById("prediction");
 
     // Cargar modelo local
-    async function loadModel() {
+    async function loadModelo() {
         try {
             predictionBox.textContent = "Cargando modelo...";
-            model = await tf.loadLayersModel("/modelo.json");
+            modelo = await tf.loadLayersModel("/modelo.json");
             predictionBox.textContent = "Modelo cargado. Activando cámara...";
         } catch (err) {
             predictionBox.textContent = "Error cargando modelo";
@@ -71,19 +71,19 @@
 
     // Clasificar fotograma
     async function classifyFrame() {
-        if (!model) return;
+        if (!modelo) return;
 
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
         // Convertir canvas → tensor
         let img = tf.browser.fromPixels(canvas)
-            .resizeNearestNeighbor([28, 28]) // Ajustar al tamaño esperado por tu modelo
+            .resizeNearestNeighbor([100, 100]) // Ajustar al tamaño esperado por tu modelo
             .toFloat()
             .div(255.0)
             .expandDims(0);
 
         // Predicción
-        const prediction = model.predict(img);
+        const prediction = modelo.predict(img);
         const result = prediction.dataSync();  
 
         // Si tu output es una clase indexada
@@ -97,7 +97,7 @@
 
     // Flujo principal
     (async () => {
-        await loadModel();
+        await loadModelo();
         await initCamera();
     })();
 
@@ -105,5 +105,6 @@
 
 </body>
 </html>
+
 
 
