@@ -47,7 +47,7 @@
     async function loadModelo() {
         try {
             predictionBox.textContent = "Cargando modelo...";
-            modelo = await tf.loadLayersModel("/modelo.json");
+            modelo = await tf.loadLayersModel("./modelo.json");
             predictionBox.textContent = "Modelo cargado. Activando cámara...";
         } catch (err) {
             predictionBox.textContent = "Error cargando modelo";
@@ -105,6 +105,7 @@
 
 </body>
 </html>
+
 
 
 
