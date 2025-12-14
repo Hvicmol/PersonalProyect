@@ -3,106 +3,109 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Clasificación en tiempo real con IA</title>
-
-    <!-- Carga de TensorFlow.js -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
-
+    <title>Reconocimiento de Imágenes desde Vídeo</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background: #f5f5f5;
+            text-align: center;
         }
-        video {
-            width: 320px;
-            height: 240px;
-            border: 2px solid #333;
-            margin-top: 20px;
+        video, canvas {
+            border: 1px solid #ccc;
+            margin: 10px;
         }
-        #prediction {
+        #result {
             margin-top: 20px;
-            font-size: 1.3em;
-            font-weight: bold;
+            font-size: 18px;
         }
     </style>
 </head>
 <body>
+    <h1>Envío de Imágenes 28x28 desde Vídeo a IA de Clasificación</h1>
+    <p>Este código accede a la cámara, captura frames, los redimensiona a 28x28 píxeles y los envía a un endpoint de IA para clasificación con softmax. Reemplaza '/api/classify' con tu endpoint real de IA.</p>
+    
+    <video id="video" width="320" height="240" autoplay></video>
+    <canvas id="canvas" width="28" height="28" style="display: none;"></canvas>
+    <button id="start">Iniciar Envío Automático</button>
+    <button id="stop" disabled>Detener</button>
+    <div id="result">Resultado de la clasificación: Esperando...</div>
 
-<h1>Clasificación en Tiempo Real</h1>
-<video id="video" autoplay playsinline></video>
-<canvas id="canvas" width="100" height="100" style="display:none;"></canvas>
-<div id="prediction">Cargando modelo...</div>
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const resultDiv = document.getElementById('result');
+        const startBtn = document.getElementById('start');
+        const stopBtn = document.getElementById('stop');
 
-<script>
-    let modelo;
-    const video = document.getElementById("video");
-    const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d");
-    const predictionBox = document.getElementById("prediction");
+        let intervalId = null;
 
-    // Cargar modelo local
-    async function loadModelo() {
-        try {
-            predictionBox.textContent = "Cargando modelo...";
-            modelo = await tf.loadLayersModel("./modelo.json");
-            predictionBox.textContent = "Modelo cargado. Activando cámara...";
-        } catch (err) {
-            predictionBox.textContent = "Error cargando modelo";
-            console.error(err);
+        // Acceder a la cámara
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                video.srcObject = stream;
+            })
+            .catch(error => {
+                console.error('Error al acceder a la cámara:', error);
+                resultDiv.textContent = 'Error: No se pudo acceder a la cámara.';
+            });
+
+        // Función para capturar, redimensionar y enviar la imagen
+        function captureAndSend() {
+            // Dibujar el frame del vídeo en el canvas (redimensiona automáticamente a 28x28)
+            ctx.drawImage(video, 0, 0, 28, 28);
+
+            // Convertir a grayscale (opcional, para modelos como MNIST)
+            const imageData = ctx.getImageData(0, 0, 28, 28);
+            for (let i = 0; i < imageData.data.length; i += 4) {
+                const avg = (imageData.data[i] + imageData.data[i + 1] + imageData.data[i + 2]) / 3;
+                imageData.data[i] = imageData.data[i + 1] = imageData.data[i + 2] = avg;
+            }
+            ctx.putImageData(imageData, 0, 0);
+
+            // Obtener la imagen como base64
+            const imageBase64 = canvas.toDataURL('image/png').split(',')[1]; // Solo la data base64
+
+            // Enviar a la IA (reemplaza con tu endpoint real)
+            fetch('/modelo.json', {  // Ejemplo: 'https://tu-servidor-ia.com/classify'
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ image: imageBase64 })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Asumiendo que la respuesta es un array de probabilidades softmax, e.g., [0.1, 0.2, ..., 0.9]
+                const softmax = data.softmax || [];
+                const maxProb = Math.max(...softmax);
+                const classIndex = softmax.indexOf(maxProb);
+                resultDiv.textContent = `Clasificación: Clase ${classIndex} con probabilidad ${maxProb.toFixed(2)}`;
+            })
+            .catch(error => {
+                console.error('Error al enviar a la IA:', error);
+                resultDiv.textContent = 'Error: No se pudo clasificar la imagen.';
+            });
         }
-    }
 
-    // Activar cámara
-    async function initCamera() {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            video.srcObject = stream;
+        // Iniciar envío automático cada 2 segundos
+        startBtn.addEventListener('click', () => {
+            if (!intervalId) {
+                intervalId = setInterval(captureAndSend, 2000);
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+            }
+        });
 
-            // Comenzar clasificación
-            setInterval(classifyFrame, 500);
-
-        } catch (err) {
-            alert("Error al acceder a la cámara: " + err);
-        }
-    }
-
-    // Clasificar fotograma
-    async function classifyFrame() {
-        if (!modelo) return;
-
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-        // Convertir canvas → tensor
-        let img = tf.browser.fromPixels(canvas)
-            .resizeNearestNeighbor([28, 28]) // Ajustar al tamaño esperado por tu modelo
-            .toFloat()
-            .div(255.0)
-            .expandDims(0);
-
-        // Predicción
-        const prediction = modelo.predict(img);
-        const result = prediction.dataSync();  
-
-        // Si tu output es una clase indexada
-        const predictedClass = result.indexOf(Math.max(...result));
-
-        predictionBox.textContent = "Predicción: " + predictedClass;
-
-        img.dispose();
-        prediction.dispose();
-    }
-
-    // Flujo principal
-    (async () => {
-        await loadModelo();
-        await initCamera();
-    })();
-
-</script>
-
+        // Detener
+        stopBtn.addEventListener('click', () => {
+            if (intervalId) {
+                clearInterval(intervalId);
+                intervalId = null;
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+            }
+        });
+    </script>
 </body>
 </html>
 
