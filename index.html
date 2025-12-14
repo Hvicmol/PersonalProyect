@@ -32,21 +32,18 @@ const resultDiv = document.getElementById('result');
 let model;
 let intervalId;
 
-/* 🔹 Cargar modelo Keras convertido */
 async function loadModel() {
     model = await tf.loadLayersModel(
         'https://raw.githubusercontent.com/Hvicmol/PersonalProyect/main/modelo.json'
     );
-    resultDiv.textContent = 'Modelo cargado correctamente ✅';
+    resultDiv.textContent = 'Modelo cargado correctamente';
 }
 loadModel();
 
-/* 🔹 Cámara */
 navigator.mediaDevices.getUserMedia({ video: true })
 .then(stream => video.srcObject = stream)
 .catch(() => resultDiv.textContent = 'Error al acceder a la cámara');
 
-/* 🔹 Predicción */
 function predict() {
     ctx.drawImage(video, 0, 0, 28, 28);
 
@@ -67,12 +64,10 @@ function predict() {
     tf.dispose([img, prediction]);
 }
 
-/* ▶ Iniciar */
 document.getElementById('start').onclick = () => {
     intervalId = setInterval(predict, 1000);
 };
 
-/* ⏹ Detener */
 document.getElementById('stop').onclick = () => {
     clearInterval(intervalId);
 };
@@ -80,6 +75,7 @@ document.getElementById('stop').onclick = () => {
 
 </body>
 </html>
+
 
 
 
