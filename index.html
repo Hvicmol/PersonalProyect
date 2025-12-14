@@ -33,11 +33,10 @@ let model;
 let intervalId;
 
 async function loadModel() {
-    model = await tf.loadLayersModel(
-        'https://raw.githubusercontent.com/Hvicmol/PersonalProyect/main/modelo.json'
-    );
-    resultDiv.textContent = 'Modelo cargado correctamente';
+    model = await tf.loadLayersModel('./modelo.json');
+    resultDiv.textContent = 'Modelo cargado correctamente ✅';
 }
+
 loadModel();
 
 navigator.mediaDevices.getUserMedia({ video: true })
@@ -75,6 +74,7 @@ document.getElementById('stop').onclick = () => {
 
 </body>
 </html>
+
 
 
 
