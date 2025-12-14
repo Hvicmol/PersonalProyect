@@ -1,113 +1,86 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reconocimiento de Imágenes desde Vídeo</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-        }
-        video, canvas {
-            border: 1px solid #ccc;
-            margin: 10px;
-        }
-        #result {
-            margin-top: 20px;
-            font-size: 18px;
-        }
-    </style>
+<meta charset="UTF-8">
+<title>Reconocimiento con IA</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.15.0/dist/tf.min.js"></script>
+
+<style>
+body { font-family: Arial; text-align: center; }
+video { border: 1px solid #ccc; }
+</style>
 </head>
+
 <body>
-    <h1>Envío de Imágenes 28x28 desde Vídeo a IA de Clasificación</h1>
-    <p>Este código accede a la cámara, captura frames, los redimensiona a 28x28 píxeles y los envía a un endpoint de IA para clasificación con softmax. Reemplaza '/api/classify' con tu endpoint real de IA.</p>
-    
-    <video id="video" width="320" height="240" autoplay></video>
-    <canvas id="canvas" width="28" height="28" style="display: none;"></canvas>
-    <button id="start">Iniciar Envío Automático</button>
-    <button id="stop" disabled>Detener</button>
-    <div id="result">Resultado de la clasificación: Esperando...</div>
 
-    <script>
-        const video = document.getElementById('video');
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-        const resultDiv = document.getElementById('result');
-        const startBtn = document.getElementById('start');
-        const stopBtn = document.getElementById('stop');
+<video id="video" width="320" height="240" autoplay></video>
+<canvas id="canvas" width="28" height="28" style="display:none;"></canvas>
 
-        let intervalId = null;
+<br>
+<button id="start">Iniciar</button>
+<button id="stop">Detener</button>
 
-        // Acceder a la cámara
-        navigator.mediaDevices.getUserMedia({ video: true })
-            .then(stream => {
-                video.srcObject = stream;
-            })
-            .catch(error => {
-                console.error('Error al acceder a la cámara:', error);
-                resultDiv.textContent = 'Error: No se pudo acceder a la cámara.';
-            });
+<div id="result">Cargando modelo...</div>
 
-        // Función para capturar, redimensionar y enviar la imagen
-        function captureAndSend() {
-            // Dibujar el frame del vídeo en el canvas (redimensiona automáticamente a 28x28)
-            ctx.drawImage(video, 0, 0, 28, 28);
+<script>
+const video = document.getElementById('video');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const resultDiv = document.getElementById('result');
 
-            // Convertir a grayscale (opcional, para modelos como MNIST)
-            const imageData = ctx.getImageData(0, 0, 28, 28);
-            for (let i = 0; i < imageData.data.length; i += 4) {
-                const avg = (imageData.data[i] + imageData.data[i + 1] + imageData.data[i + 2]) / 3;
-                imageData.data[i] = imageData.data[i + 1] = imageData.data[i + 2] = avg;
-            }
-            ctx.putImageData(imageData, 0, 0);
+let model;
+let intervalId;
 
-            // Obtener la imagen como base64
-            const imageBase64 = canvas.toDataURL('image/png').split(',')[1]; // Solo la data base64
+/* 🔹 Cargar modelo Keras convertido */
+async function loadModel() {
+    model = await tf.loadLayersModel(
+        'https://raw.githubusercontent.com/Hvicmol/PersonalProyect/main/modelo.json'
+    );
+    resultDiv.textContent = 'Modelo cargado correctamente ✅';
+}
+loadModel();
 
-            // Enviar a la IA (reemplaza con tu endpoint real)
-            fetch('/modelo.json', {  // Ejemplo: 'https://tu-servidor-ia.com/classify'
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ image: imageBase64 })
-            })
-            .then(response => response.json())
-            .then(data => {
-                // Asumiendo que la respuesta es un array de probabilidades softmax, e.g., [0.1, 0.2, ..., 0.9]
-                const softmax = data.softmax || [];
-                const maxProb = Math.max(...softmax);
-                const classIndex = softmax.indexOf(maxProb);
-                resultDiv.textContent = `Clasificación: Clase ${classIndex} con probabilidad ${maxProb.toFixed(2)}`;
-            })
-            .catch(error => {
-                console.error('Error al enviar a la IA:', error);
-                resultDiv.textContent = 'Error: No se pudo clasificar la imagen.';
-            });
-        }
+/* 🔹 Cámara */
+navigator.mediaDevices.getUserMedia({ video: true })
+.then(stream => video.srcObject = stream)
+.catch(() => resultDiv.textContent = 'Error al acceder a la cámara');
 
-        // Iniciar envío automático cada 2 segundos
-        startBtn.addEventListener('click', () => {
-            if (!intervalId) {
-                intervalId = setInterval(captureAndSend, 2000);
-                startBtn.disabled = true;
-                stopBtn.disabled = false;
-            }
-        });
+/* 🔹 Predicción */
+function predict() {
+    ctx.drawImage(video, 0, 0, 28, 28);
 
-        // Detener
-        stopBtn.addEventListener('click', () => {
-            if (intervalId) {
-                clearInterval(intervalId);
-                intervalId = null;
-                startBtn.disabled = false;
-                stopBtn.disabled = true;
-            }
-        });
-    </script>
+    let img = tf.browser.fromPixels(canvas, 1)
+        .toFloat()
+        .div(255.0)
+        .reshape([1, 28, 28, 1]);
+
+    const prediction = model.predict(img);
+    const data = prediction.dataSync();
+
+    const max = Math.max(...data);
+    const index = data.indexOf(max);
+
+    resultDiv.textContent =
+        `Clase: ${index} — Confianza: ${(max * 100).toFixed(2)}%`;
+
+    tf.dispose([img, prediction]);
+}
+
+/* ▶ Iniciar */
+document.getElementById('start').onclick = () => {
+    intervalId = setInterval(predict, 1000);
+};
+
+/* ⏹ Detener */
+document.getElementById('stop').onclick = () => {
+    clearInterval(intervalId);
+};
+</script>
+
 </body>
 </html>
+
 
 
 
