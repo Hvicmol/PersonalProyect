@@ -33,9 +33,16 @@ let model;
 let intervalId;
 
 async function loadModel() {
-    model = await tf.loadLayersModel('./modelo.json');
-    resultDiv.textContent = 'Modelo cargado correctamente ✅';
+    try {
+        predictionBox.textContent = "Cargando modelo...";
+        model = await tf.loadLayersModel("./modelo.json");
+        predictionBox.textContent = "Modelo cargado correctamente";
+    } catch (err) {
+        predictionBox.textContent =
+            "Error cargando modelo: " + err.message;
+    }
 }
+
 
 loadModel();
 
@@ -74,6 +81,7 @@ document.getElementById('stop').onclick = () => {
 
 </body>
 </html>
+
 
 
 
