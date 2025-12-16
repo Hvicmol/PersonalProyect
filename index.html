@@ -37,7 +37,7 @@ async function loadModel() {
         predictionBox.textContent = "Cargando modelo...";
         await tf.setBackend("cpu");
         await tf.ready();
-        model = await tf.loadLayersModel("./modelo.json");
+        model = await tf.loadLayersModel("/modelo.json");
         predictionBox.textContent = "Modelo cargado correctamente";
     } catch (err) {
         predictionBox.textContent =
@@ -84,6 +84,7 @@ document.getElementById('stop').onclick = () => {
 
 </body>
 </html>
+
 
 
 
