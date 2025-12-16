@@ -35,6 +35,8 @@ let intervalId;
 async function loadModel() {
     try {
         predictionBox.textContent = "Cargando modelo...";
+        await tf.setBackend("cpu");
+        await tf.ready();
         model = await tf.loadLayersModel("./modelo.json");
         predictionBox.textContent = "Modelo cargado correctamente";
     } catch (err) {
@@ -54,9 +56,10 @@ function predict() {
     ctx.drawImage(video, 0, 0, 28, 28);
 
 let img = tf.browser.fromPixels(canvas, 1)
+    .resizeNearestNeighbor([28, 28])
     .toFloat()
     .div(255.0)
-    .expandDims(0); // ← SOLO esta dimensión
+    .expandDims(0);
 
     const prediction = model.predict(img);
     const data = prediction.dataSync();
@@ -81,6 +84,7 @@ document.getElementById('stop').onclick = () => {
 
 </body>
 </html>
+
 
 
 
