@@ -2,9 +2,9 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>PP</title>
+  <title>Fashion MNIST Webcam</title>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0"></script>
-    <style>
+  <style>
     body {
       font-family: Arial, sans-serif;
       text-align: center;
@@ -24,9 +24,12 @@
 </head>
 <body>
 
-<video id="video" autoplay playsinline></video>
+<video id="video" width="224" height="224" autoplay playsinline></video>
 <br>
 <canvas id="canvas" width="28" height="28" style="display:none;"></canvas>
+
+<div id="prediction">Cargando modelo…</div>
+<div id="probs"></div>
 
 <script>
   const video = document.getElementById("video");
@@ -48,9 +51,9 @@
     "Bolso",
     "Bota"
   ];
-  
+
   const MODEL_URL =
-    "./model.json";
+    "https://raw.githubusercontent.com/USUARIO/REPO/main/model/model.json";
 
   let model;
 
@@ -65,7 +68,6 @@
   }
 
   async function loadModel() {
-    predictionDiv.textContent = "Cargando modelo...";
     model = await tf.loadGraphModel(MODEL_URL);
     predictionDiv.textContent = "Modelo cargado";
   }
@@ -76,22 +78,21 @@
     return tf.tidy(() => {
       let img = tf.browser.fromPixels(canvas, 1);
       img = img.toFloat().div(255.0);
-      img = img.expandDims(0); 
-      return img;
+      return img.expandDims(0);
     });
   }
 
   async function classifyFrame() {
     const inputTensor = preprocessFrame();
 
-    const prediction = model.execute(
+    const output = model.execute(
       { "keras_tensor_27:0": inputTensor },
       "Identity:0"
     );
 
-    const probs = await prediction.data();
-    
-   let maxIdx = 0;
+    const probs = await output.data();
+
+    let maxIdx = 0;
     for (let i = 1; i < probs.length; i++) {
       if (probs[i] > probs[maxIdx]) maxIdx = i;
     }
@@ -120,7 +121,3 @@
 
 </body>
 </html>
-
-
-
-
