@@ -2,12 +2,12 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>PP</title>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0"></script>
+  <title>Video + GraphModel TFJS</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0"></script>
 </head>
 <body>
 
-<video id="video" width="224" height="224" autoplay></video>
+<video id="video" autoplay playsinline></video>
 <canvas id="canvas" width="28" height="28" style="display:none;"></canvas>
 
 <script>
@@ -15,9 +15,13 @@
   const canvas = document.getElementById("canvas");
   const ctx = canvas.getContext("2d");
 
-  const labels = ["Clase A", "Clase B", "Clase C"];
+  // ⚠️ Usa la URL RAW de GitHub
+  const MODEL_URL =
+    "https://raw.githubusercontent.com/USUARIO/REPO/main/model/model.json";
+
   let model;
-  
+
+  // 1. Webcam
   async function setupCamera() {
     const stream = await navigator.mediaDevices.getUserMedia({
       video: { width: 224, height: 224 }
@@ -28,38 +32,46 @@
     });
   }
 
+  // 2. Cargar GraphModel
   async function loadModel() {
     console.log("Cargando modelo...");
-    model = await tf.loadLayersModel("./model.json");
-    console.log("Modelo cargado correctamente");
+    model = await tf.loadGraphModel(MODEL_URL);
+    console.log("Modelo cargado");
   }
 
+  // 3. Preprocesar frame → [1, 28, 28, 1]
+  function preprocessFrame() {
+    ctx.drawImage(video, 0, 0, 28, 28);
+
+    return tf.tidy(() => {
+      let img = tf.browser.fromPixels(canvas, 1); // 1 canal (grayscale)
+      img = img.toFloat().div(255.0);
+      img = img.expandDims(0); // batch
+      return img;
+    });
+  }
+
+  // 4. Clasificación
   async function classifyFrame() {
-    ctx.drawImage(canvas, 0, 0, 28, 28);
+    const inputTensor = preprocessFrame();
 
-    const inputTensor = tf.tidy(() =>
-      tf.browser
-        .fromPixels(canvas)
-        .toFloat()
-        .div(255.0)
-        .expandDims(0)
+    // Nombre de entrada según tu modelo
+    const prediction = model.execute(
+      { "keras_tensor_27:0": inputTensor },
+      "Identity:0"
     );
 
-    const prediction = model.predict(inputTensor);
     const probs = await prediction.data();
+    const predictedClass = probs.indexOf(Math.max(...probs));
 
-    const maxIndex = probs.indexOf(Math.max(...probs));
-    console.log(
-      "Clase:",
-      labels[maxIndex],
-      "Probabilidades:",
-      probs
-    );
+    console.log("Clase:", predictedClass, "Probabilidades:", probs);
 
     tf.dispose([inputTensor, prediction]);
+
     requestAnimationFrame(classifyFrame);
   }
-  
+
+  // 5. Inicio
   async function main() {
     await setupCamera();
     await loadModel();
@@ -71,9 +83,3 @@
 
 </body>
 </html>
-
-
-
-
-
-
