@@ -4,10 +4,28 @@
   <meta charset="UTF-8">
   <title>ProyectoPersonal</title>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0"></script>
+    <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+    }
+    #prediction {
+      margin-top: 12px;
+      font-size: 22px;
+      font-weight: bold;
+    }
+    #probs {
+      margin-top: 8px;
+      font-size: 14px;
+      text-align: left;
+      display: inline-block;
+    }
+  </style>
 </head>
 <body>
 
 <video id="video" autoplay playsinline></video>
+<br>
 <canvas id="canvas" width="28" height="28" style="display:none;"></canvas>
 
 <script>
@@ -15,13 +33,27 @@
   const canvas = document.getElementById("canvas");
   const ctx = canvas.getContext("2d");
 
-  // ⚠️ Usa la URL RAW de GitHub
+  const predictionDiv = document.getElementById("prediction");
+  const probsDiv = document.getElementById("probs");
+
+  const CLASS_NAMES = [
+    "Camiseta / Top",
+    "Pantalón",
+    "Suéter",
+    "Vestido",
+    "Abrigo",
+    "Sandalia",
+    "Camisa",
+    "Zapatilla",
+    "Bolso",
+    "Bota"
+  ];
+  
   const MODEL_URL =
     "./model.json";
 
   let model;
 
-  // 1. Webcam
   async function setupCamera() {
     const stream = await navigator.mediaDevices.getUserMedia({
       video: { width: 224, height: 224 }
@@ -32,46 +64,51 @@
     });
   }
 
-  // 2. Cargar GraphModel
   async function loadModel() {
-    console.log("Cargando modelo...");
+    predictionDiv.textContent = "Cargando modelo...";
     model = await tf.loadGraphModel(MODEL_URL);
-    console.log("Modelo cargado");
+    predictionDiv.textContent = "Modelo cargado";
   }
 
-  // 3. Preprocesar frame → [1, 28, 28, 1]
   function preprocessFrame() {
     ctx.drawImage(video, 0, 0, 28, 28);
 
     return tf.tidy(() => {
-      let img = tf.browser.fromPixels(canvas, 1); // 1 canal (grayscale)
+      let img = tf.browser.fromPixels(canvas, 1);
       img = img.toFloat().div(255.0);
-      img = img.expandDims(0); // batch
+      img = img.expandDims(0); 
       return img;
     });
   }
 
-  // 4. Clasificación
   async function classifyFrame() {
     const inputTensor = preprocessFrame();
 
-    // Nombre de entrada según tu modelo
     const prediction = model.execute(
       { "keras_tensor_27:0": inputTensor },
       "Identity:0"
     );
 
     const probs = await prediction.data();
-    const predictedClass = probs.indexOf(Math.max(...probs));
+    
+   let maxIdx = 0;
+    for (let i = 1; i < probs.length; i++) {
+      if (probs[i] > probs[maxIdx]) maxIdx = i;
+    }
 
-    console.log("Clase:", predictedClass, "Probabilidades:", probs);
+    // Mostrar predicción principal
+    predictionDiv.textContent =
+      `Predicción: ${CLASS_NAMES[maxIdx]} (${(probs[maxIdx] * 100).toFixed(2)}%)`;
 
-    tf.dispose([inputTensor, prediction]);
+    // Mostrar todas las probabilidades
+    probsDiv.innerHTML = CLASS_NAMES.map((name, i) =>
+      `${name}: ${(probs[i] * 100).toFixed(2)}%`
+    ).join("<br>");
 
+    tf.dispose([inputTensor, output]);
     requestAnimationFrame(classifyFrame);
   }
 
-  // 5. Inicio
   async function main() {
     await setupCamera();
     await loadModel();
@@ -83,5 +120,6 @@
 
 </body>
 </html>
+
 
 
