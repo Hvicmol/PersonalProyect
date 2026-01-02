@@ -26,7 +26,7 @@
 
 <video id="video" width="224" height="224" autoplay playsinline></video>
 <br>
-<canvas id="canvas" width="28" height="28" style="display:none;"></canvas>
+<canvas id="canvas" width="224" height="224" style="display:none;"></canvas>
 
 <div id="prediction">Cargando modelo…</div>
 <div id="probs"></div>
@@ -40,16 +40,15 @@
   const probsDiv = document.getElementById("probs");
 
   const CLASS_NAMES = [
-    "Camiseta / Top",
-    "Pantalón",
-    "Suéter",
-    "Vestido",
-    "Abrigo",
-    "Sandalia",
-    "Camisa",
-    "Zapatilla",
-    "Bolso",
-    "Bota"
+    "Calculadora",
+    "Goma de borrar",
+    "Lapic",
+    "Libreta",
+    "Limon",
+    "Manzana",
+    "Naranja",
+    "Platano",
+    "Zapatilla"
   ];
 
   const MODEL_URL =
@@ -73,10 +72,10 @@
   }
 
   function preprocessFrame() {
-    ctx.drawImage(video, 0, 0, 28, 28);
+    ctx.drawImage(video, 0, 0, 224, 224);
 
     return tf.tidy(() => {
-      let img = tf.browser.fromPixels(canvas, 1);
+      let img = tf.browser.fromPixels(canvas, 3);
       img = img.toFloat().div(255.0);
       return img.expandDims(0);
     });
@@ -97,7 +96,6 @@
       if (probs[i] > probs[maxIdx]) maxIdx = i;
     }
 
-    // Mostrar predicción principal
     predictionDiv.textContent =
       `Predicción: ${CLASS_NAMES[maxIdx]} (${(probs[maxIdx] * 100).toFixed(2)}%)`;
 
@@ -121,4 +119,5 @@
 
 </body>
 </html>
+
 
