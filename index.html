@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>pp</title>
+  <title>Proyecto personal</title>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0"></script>
   <style>
     body {
@@ -23,6 +23,8 @@
   </style>
 </head>
 <body>
+
+<p>Proyecto Personal</p>
 
 <video id="video" width="224" height="224" autoplay playsinline></video>
 <br>
@@ -85,7 +87,7 @@
     const inputTensor = preprocessFrame();
 
     const output = model.execute(
-      { "keras_tensor_27:0": inputTensor },
+      { "keras_tensor:0": inputTensor },
       "Identity:0"
     );
 
@@ -119,5 +121,6 @@
 
 </body>
 </html>
+
 
 
