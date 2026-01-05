@@ -35,7 +35,7 @@
 </head>
 <body>
 
-<h1>:Proyecto Personal:</h1>
+<h1>Proyecto Personal</h1>
 
 <video id="video" width="224" height="224" autoplay playsinline muted></video>
 <br>
@@ -87,6 +87,7 @@
     "./colores/model.json";
 
   let model;
+  let model_color;
 
   async function setupCamera() {
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -120,6 +121,7 @@
 
   async function classifyFrame() {
     const inputTensor = preprocessFrame();
+    const inputTensorColor = preprocessFrame();
 
     const output = model.execute(
       { "keras_tensor:0": inputTensor },
@@ -174,6 +176,7 @@
 
 </body>
 </html>
+
 
 
 
