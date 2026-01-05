@@ -30,8 +30,10 @@
 <br>
 <canvas id="canvas" width="224" height="224" style="display:none;"></canvas>
 
-<div id="prediction">Cargando modelo…</div>
+<div id="prediction">Cargando modelo de imagenes…</div>
 <div id="probs"></div>
+<div id="prediction_color">Cargando modelo de colores…</div>
+<div id="probs_color"></div>
 
 <script>
   const video = document.getElementById("video");
@@ -39,12 +41,15 @@
   const ctx = canvas.getContext("2d");
 
   const predictionDiv = document.getElementById("prediction");
+  const predictionColorDiv = document.getElementById("prediction_color");
   const probsDiv = document.getElementById("probs");
+  const probsColorDiv = document.getElementById("probs_color");
+  
 
   const CLASS_NAMES = [
     "Calculadora",
     "Goma de borrar",
-    "Lapic",
+    "Lapiz",
     "Libreta",
     "Limon",
     "Manzana",
@@ -52,9 +57,23 @@
     "Platano",
     "Zapatilla"
   ];
+  
+  const CLASS_NAMES_COLOR = [
+    "Amarillo",
+    "Azul",
+    "Banco",
+    "Morado",
+    "Naranja",
+    "Negro",
+    "Rojo",
+    "Verde"
+  ];
 
   const MODEL_URL =
     "./model.json";
+
+  const MODEL_COLOR_URL =
+    "../model.json";
 
   let model;
 
@@ -71,6 +90,11 @@
   async function loadModel() {
     model = await tf.loadGraphModel(MODEL_URL);
     predictionDiv.textContent = "Modelo cargado";
+  }
+
+    async function loadModelColor() {
+    model_color = await tf.loadGraphModel(MODEL_COLOR_URL);
+    predictionColorDiv.textContent = "Modelo cargado";
   }
 
   function preprocessFrame() {
@@ -91,29 +115,47 @@
       "Identity:0"
     );
 
+        const output_color = model_color.execute(
+      { "keras_tensor:0": inputTensorColor },
+      "Identity:0"
+    );
+
     const probs = await output.data();
+    const probs_color = await output_color.data();
 
     let maxIdx = 0;
     for (let i = 1; i < probs.length; i++) {
       if (probs[i] > probs[maxIdx]) maxIdx = i;
     }
 
+    let maxIdxC = 0;
+    for (let j = 1; j < probs_color.length; j++) {
+      if (probs_color[j] > probs_color[maxIdxC]) maxIdxC = j;
+    }
+
     predictionDiv.textContent =
       `Predicción: ${CLASS_NAMES[maxIdx]} (${(probs[maxIdx] * 100).toFixed(2)}%)`;
 
-    // Mostrar todas las probabilidades
+    predictionColorDiv.textContent =
+      `Predicción: ${CLASS_NAMES_COLOR[maxIdxC]} (${(probs_color[maxIdxC] * 100).toFixed(2)}%)`;
+
     probsDiv.innerHTML = CLASS_NAMES.map((name, i) =>
       `${name}: ${(probs[i] * 100).toFixed(2)}%`
     ).join("<br>");
 
     tf.dispose([inputTensor, output]);
     requestAnimationFrame(classifyFrame);
+
+    tf.dispose([inputTensorColor, output_color]);
+    requestAnimationFrame(classifyFrameColor);
   }
 
   async function main() {
     await setupCamera();
     await loadModel();
+    await loadColorMoldel();
     classifyFrame();
+    classifyFrameColor();
   }
 
   main();
@@ -121,6 +163,7 @@
 
 </body>
 </html>
+
 
 
 
