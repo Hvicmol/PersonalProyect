@@ -8,7 +8,7 @@
     body {
       font-family: Arial, sans-serif;
       text-align: center;
-      background-color: purple;
+      background-color: rgb(217, 245, 247);
     }
     #prediction {
       margin-top: 12px;
@@ -153,10 +153,6 @@
     predictionColorDiv.textContent =
       `Predicción: ${CLASS_NAMES_COLOR[maxIdxC]} (${(probs_color[maxIdxC] * 100).toFixed(2)}%)`;
 
-    probsDiv.innerHTML = CLASS_NAMES.map((name, i) =>
-      `${name}: ${(probs[i] * 100).toFixed(2)}%`
-    ).join("<br>");
-
     tf.dispose([inputTensor, output]);
     requestAnimationFrame(classifyFrame);
 
@@ -177,6 +173,7 @@
 
 </body>
 </html>
+
 
 
 
