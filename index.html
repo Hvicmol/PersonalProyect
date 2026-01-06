@@ -36,17 +36,9 @@
 </head>
 <body>
 
-<h1>Proyecto Personal</h1>
+<h1>/Proyecto Personal/</h1>
 
-const constraints = {
-  video: {
-  facingMode: { exact : "environment"}
-  }
-};
 
-navigator.mediaDevices.getUserMedia(constraints).then(stream => {
-  document.querySelector('video').scrObject = stream;
-});
 
 <video id="video" width="224" height="224" autoplay playsinline muted></video>
 <br>
@@ -66,7 +58,16 @@ navigator.mediaDevices.getUserMedia(constraints).then(stream => {
   const predictionColorDiv = document.getElementById("prediction_color");
   const probsDiv = document.getElementById("probs");
   const probsColorDiv = document.getElementById("probs_color");
-  
+
+  const constraints = {
+  video: {
+  facingMode: { exact : "environment"}
+  }
+};
+
+navigator.mediaDevices.getUserMedia(constraints).then(stream => {
+  document.querySelector('video').scrObject = stream;
+});
 
   const CLASS_NAMES = [
     "Calculadora",
@@ -183,6 +184,7 @@ navigator.mediaDevices.getUserMedia(constraints).then(stream => {
 
 </body>
 </html>
+
 
 
 
